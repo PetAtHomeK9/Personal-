@@ -5,7 +5,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, filters, CallbackContext
 from ..models import Category, Product, Purchase
 from django.core.wsgi import get_wsgi_application
-#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Load Django models
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ecommerceBot.settings")
@@ -185,10 +185,10 @@ def main():
 
     # Message handler for search
     dispatcher.add_handler(CallbackQueryHandler(search_products_prompt, pattern='search'))
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, search_products))
+    dispatcher.add_handler(MessageHandler(filters.text & ~filters.command, search_products))
 
     # Message handler for receipt upload
-    dispatcher.add_handler(MessageHandler(Filters.photo, handle_receipt_upload))
+    dispatcher.add_handler(MessageHandler(filters.photo, handle_receipt_upload))
 
     # Start the bot
     updater.start_polling()
