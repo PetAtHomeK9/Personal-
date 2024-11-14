@@ -1,20 +1,20 @@
 import os
-import sys
 import django
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, filters, CallbackContext
-from ..models import Category, Product, Purchase
 from django.core.wsgi import get_wsgi_application
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ecormmerceBot.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ecormmerceBot.settings')
+
+application = get_wsgi_application()
+django.setup()
+
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, Updater, ContextTypes, CommandHandler, CallbackQueryHandler, MessageHandler, filters, CallbackContext
+from BotCommerce.models import Category, Product, Purchase
 
 # Load Django models
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ecommerceBot.settings")
-application = get_wsgi_application()
 
-
-
-# Initialize Django
-django.setup()
+#application = get_wsgi_application()
 
 
 
@@ -28,15 +28,16 @@ Account Number: 1234567890
 Account Name: Beautiful Lucifer
 """
 
+
 # Start command handler
-def start(update: Update, context: CallbackContext) -> None:
+async def start(update: Update, context: CallbackContext):
     keyboard = [
         [InlineKeyboardButton("Categories", callback_data='categories')],
         [InlineKeyboardButton("Search", callback_data='search')],
         [InlineKeyboardButton("Quit", callback_data='quit')],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text('Welcome to the store! Choose an option:', reply_markup=reply_markup)
+    await update.message.reply_text('Welcome to the store! Choose an option:', reply_markup=reply_markup)
 
 # Handle categories display
 def show_categories(update: Update, context: CallbackContext) -> None:
@@ -170,29 +171,26 @@ def quit(update: Update, context: CallbackContext) -> None:
 
 # Main bot function
 def main():
-    updater = Updater(BOT_TOKEN, use_context=True)
-    dispatcher = updater.dispatcher
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
+    
+    start_handler = CommandHandler('start', start)
 
-    # Command handlers
-    dispatcher.add_handler(CommandHandler("start", start))
+    application.add_handler(start_handler)
 
     # Callback query handlers
-    dispatcher.add_handler(CallbackQueryHandler(show_categories, pattern='categories'))
-    dispatcher.add_handler(CallbackQueryHandler(quit, pattern='quit'))
-    dispatcher.add_handler(CallbackQueryHandler(show_products_in_category, pattern=r'^category_\d+'))
-    dispatcher.add_handler(CallbackQueryHandler(purchase_product, pattern=r'^purchase_\d+'))
-    dispatcher.add_handler(CallbackQueryHandler(confirm_payment, pattern=r'^paid_\d+'))
+    application.add_handler(CallbackQueryHandler(show_categories, pattern='categories'))
+    application.add_handler(CallbackQueryHandler(quit, pattern='quit'))
+    application.add_handler(CallbackQueryHandler(show_products_in_category, pattern=r'^category_\d+'))
+    application.add_handler(CallbackQueryHandler(purchase_product, pattern=r'^purchase_\d+'))
+    application.add_handler(CallbackQueryHandler(confirm_payment, pattern=r'^paid_\d+'))
 
     # Message handler for search
-    dispatcher.add_handler(CallbackQueryHandler(search_products_prompt, pattern='search'))
-    dispatcher.add_handler(MessageHandler(filters.text & ~filters.command, search_products))
+    application.add_handler(CallbackQueryHandler(search_products_prompt, pattern='search'))
+    #application.add_handler(MessageHandler(filters.Text & ~filters.command, search_products))
 
-    # Message handler for receipt upload
-    dispatcher.add_handler(MessageHandler(filters.photo, handle_receipt_upload))
+    # Message handler for receipt upload - fix this
+    #application.add_handler(MessageHandler(filters.Photo, handle_receipt_upload))
 
-    # Start the bot
-    updater.start_polling()
-    updater.idle()
+    application.run_polling()
 
-if __name__ == '__main__':
-    main()
+main()
